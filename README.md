@@ -27,7 +27,7 @@ blurred-thoughts-SFT
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/mkurman/blurred-thoughts-SFT.git
 cd blurred-thoughts-SFT
 ```
 
