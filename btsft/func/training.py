@@ -64,6 +64,11 @@ def train(
 
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, use_fast=True)
 
+    # make sure tokenizer contains <think> and </think> tokens
+    if "<think>" not in tokenizer.special_tokens_map.values():
+        print("Adding special tokens <think> and </think> to tokenizer.")
+        tokenizer.add_special_tokens({"additional_special_tokens": ["<think>", "</think>"]})
+
     print("Loading model...")
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=checkpoint,
@@ -71,6 +76,11 @@ def train(
         max_lora_rank=lora_rank,
         cache_dir=cache_dir,
     )
+
+    # resize token embeddings if necessary
+    if model.config.vocab_size != len(tokenizer):
+        print("Resizing token embeddings...")
+        model.resize_token_embeddings(len(tokenizer), mean_resizing=True)
 
     model = FastLanguageModel.get_peft_model(
         model,
