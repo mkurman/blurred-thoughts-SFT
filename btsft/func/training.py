@@ -1,6 +1,7 @@
 import os
 import random
 import torch
+import warnings
 import bitsandbytes as bnb
 from datetime import datetime
 from typing import Optional
@@ -9,7 +10,6 @@ from transformers import (
     AutoTokenizer,
     DataCollatorForLanguageModeling,
     TrainingArguments,
-    Trainer,
     set_seed,
     get_cosine_schedule_with_warmup
 )
@@ -22,6 +22,8 @@ from btsft.trainers.blurred_thoughts import BlurredThoughtsSFTTrainer
 from transformers.trainer_pt_utils import get_parameter_names
 from datasets import load_dataset, concatenate_datasets
 from unsloth import FastLanguageModel
+
+warnings.filterwarnings("ignore")
 
 def train(
     model_name: str,
