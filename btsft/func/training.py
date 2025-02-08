@@ -17,6 +17,7 @@ from transformers import (
 from btsft.func.format_reward import format_reward_func
 from btsft.func.parameters import get_parameters_count
 from btsft.func.mapping import map_iio, map_conversations
+from btsft.trainers.blurred_thoughts import BlurredThoughtsSFTTrainer
 
 from transformers.trainer_pt_utils import get_parameter_names
 from datasets import load_dataset, concatenate_datasets
@@ -327,38 +328,6 @@ def train(
         use_cpu=device == "cpu",
     )
 
-    class BlurredThoughtsSFTTrainer(Trainer):
-        def compute_loss(
-            self, 
-            model, 
-            inputs, 
-            num_items_in_batch=None, 
-            return_outputs=False
-        ):
-            outputs = self.model(
-                inputs["input_ids"],
-                labels=inputs["labels"],
-                num_items_in_batch=num_items_in_batch,
-                return_dict=True,
-            )
-            logits = outputs.logits
-            loss = outputs.loss
-
-            completions = tokenizer.batch_decode(
-                logits.argmax(dim=-1), skip_special_tokens=False
-            )
-
-            rewards = format_reward_func(
-                completions,
-                tokenizer.batch_decode(inputs["input_ids"], skip_special_tokens=False),
-            )
-            rewards = torch.tensor(rewards).mean()
-            rewards = 1 - rewards
-
-            loss = loss + bf_beta * rewards
-
-            return (loss, outputs) if return_outputs else loss
-
     print("Training model.")
     trainer = BlurredThoughtsSFTTrainer(
         model=model,
@@ -367,6 +336,9 @@ def train(
         eval_dataset=test_ds.with_format("torch"),
         data_collator=collator,
         optimizers=(optimizer, lr_scheduler),
+        tokenizer=tokenizer,
+        bf_beta=bf_beta,
+        format_reward_func=format_reward_func,
     )
 
     trainer.train(resume_from_checkpoint=trainer_checkpoint)
